@@ -57,6 +57,24 @@ User.prototype.register = function() {
 
 }
 
+User.prototype.login = function() {
+
+    return new Promise((resolve, reject) => {
+        this.cleanUp()
+        
+        users.findOne({username: this.data.username}).then((info) =>{
+            if(info && info.password == this.data.password) {
+                resolve("Cong")
+            } else {
+                reject("Wrong username or password")
+            }
+        }).catch(() => {
+            reject("Please try again later.")
+        })
+    })
+
+}
+
 
 
 module.exports = User

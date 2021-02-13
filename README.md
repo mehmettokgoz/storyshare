@@ -12,3 +12,6 @@ storyshare is a social platform that people share their own stories and personal
 4) User personal profile page
 5) User post mechanism
 ...
+
+
+This project is being developed in parallel with @ Brad's Udemy course. Unedited versions of HTML source codes belong to @ Brad.

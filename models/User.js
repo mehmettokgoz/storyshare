@@ -1,6 +1,7 @@
 const validator = require("validator")
 const database = require('../db')
 const users = database.collection('users')
+const bcrypt = require('bcryptjs')
 
 let User = function(data){
     
@@ -11,19 +12,15 @@ let User = function(data){
 User.prototype.validate = function() {
 
     if (this.data.username == "") { this.errors.push("Username shouldn't be empty") }
-
-    if (this.data.email == "") { this.errors.push(" n                                                                                                                      pty") }
-
+    if (this.data.email == "") { this.errors.push("Email cannnot be empty") }
     if (this.data.password == "") { this.errors.push("Password shouldn't be empty") }
-
     if (this.data.password.length > 0 && this.data.password.length < 8) { this.errors.push("Password should be at least 8 character") }
-    
     if (this.data.password.username > 0 && this.data.password.length < 3) { this.errors.push("Username should be at least 3 character") }
-
     if (!validator.isEmail(this.data.email)) { this.errors.push("You must provide a valid email.")}
-
     if(this.data.username != "" && !validator.isAlphanumeric(this.data.username)) {this.errors.push("Username can only contain letters and numbers")}
+
 }
+
 
 User.prototype.cleanUp = function() {
 
@@ -52,6 +49,9 @@ User.prototype.register = function() {
     
     //Step 2 : If no error, Add user to database
     if(!this.errors.length) {
+        // hash user password
+        let salt = bcrypt.genSaltSync(10)
+        this.data.password = bcrypt.hashSync(this.data.password,salt)
         users.insertOne(this.data)
     }
 
@@ -61,12 +61,13 @@ User.prototype.login = function() {
 
     return new Promise((resolve, reject) => {
         this.cleanUp()
+
         
         users.findOne({username: this.data.username}).then((info) =>{
-            if(info && info.password == this.data.password) {
-                resolve("Cong")
+            if(info && bcrypt.compareSync(this.data.password, info.password)) {
+                resolve(1)
             } else {
-                reject("Wrong username or password")
+                reject(0)
             }
         }).catch(() => {
             reject("Please try again later.")

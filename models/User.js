@@ -1,5 +1,5 @@
 const validator = require("validator")
-const database = require('../db')
+const database = require('../db').db()
 const users = database.collection('users')
 const bcrypt = require('bcryptjs')
 
@@ -65,9 +65,9 @@ User.prototype.login = function() {
         
         users.findOne({username: this.data.username}).then((info) =>{
             if(info && bcrypt.compareSync(this.data.password, info.password)) {
-                resolve(1)
+                resolve("congs")
             } else {
-                reject(0)
+                reject("wrong password")
             }
         }).catch(() => {
             reject("Please try again later.")

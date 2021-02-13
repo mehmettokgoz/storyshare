@@ -6,10 +6,17 @@ exports.login = function(req, res) {
 
     user.login().then(function(result) {
         req.session.user = {username: user.data.username}
+        req.session.save(function() {
+            res.redirect('/')
+        })
 
-        res.send(result)
+
     }).catch(function(err) {
-        res.send(err)
+        req.flash('errors', err)
+        req.session.save(function(){
+            res.redirect('/')
+        })
+
     })
 
 
@@ -17,7 +24,13 @@ exports.login = function(req, res) {
 
 }
 
-exports.logout = function() {
+exports.logout = function(req, res) {
+
+    req.session.destroy(function() {
+
+        res.redirect('/')
+    })
+
     
 }
 
@@ -26,7 +39,7 @@ exports.register = function(req, res) {
     user.register()
     
     if (user.errors.length == 0) {
-        res.send("Thanks")
+        res.redirect('/')
     } else {
         res.send(user.errors)
     }
@@ -36,9 +49,9 @@ exports.register = function(req, res) {
 
 exports.home = function(req, res) {
     if (req.session.user) {
-        res.send("req.session.user")
+        res.render('home-dashboard', {username: req.session.user.username})
     } else {
-        res.render('home-guest')
+        res.render('home-guest', {errors: req.flash('errors')})
     }
 
 }

@@ -1,81 +1,83 @@
 const validator = require("validator")
-const database = require('../db').db()
-const users = database.collection('users')
+const users = require('../db').db().collection('users')
 const bcrypt = require('bcryptjs')
 
 let User = function(data){
     
-    this.data = data
+    this.username = data.username,
+    this.password = data.password,
+    this.email = data.email,
     this.errors = []
+
 }
 
+// This function finds if guest make rule violation while registering
 User.prototype.validate = function() {
 
-    if (this.data.username == "") { this.errors.push("Username shouldn't be empty") }
-    if (this.data.email == "") { this.errors.push("Email cannnot be empty") }
-    if (this.data.password == "") { this.errors.push("Password shouldn't be empty") }
-    if (this.data.password.length > 0 && this.data.password.length < 8) { this.errors.push("Password should be at least 8 character") }
-    if (this.data.password.username > 0 && this.data.password.length < 3) { this.errors.push("Username should be at least 3 character") }
-    if (!validator.isEmail(this.data.email)) { this.errors.push("You must provide a valid email.")}
-    if(this.data.username != "" && !validator.isAlphanumeric(this.data.username)) {this.errors.push("Username can only contain letters and numbers")}
+    if (this.username == "") { this.errors.push("Username shouldn't be empty") }
+    if (this.email == "") { this.errors.push("Email cannnot be empty") }
+    if (this.password == "") { this.errors.push("Password shouldn't be empty") }
+    if (this.password.length > 0 && this.password.length < 8) { this.errors.push("Password should be at least 8 character") }
+    if (this.password.username > 0 && this.password.length < 3) { this.errors.push("Username should be at least 3 character") }
+    if (!validator.isEmail(this.email)) { this.errors.push("You must provide a valid email.")}
+    if(this.username != "" && !validator.isAlphanumeric(this.username)) {this.errors.push("Username can only contain letters and numbers")}
 
 }
 
+// This function controls inputs for security and typo reasons
+User.prototype.clearInputs = function() {
 
-User.prototype.cleanUp = function() {
+    // Checking for user inputs in case different from string
+    if (typeof(this.username) != "string") {this.username = ""}
 
-    if (typeof(this.data.username) != "string") {this.data.username = ""}
+    if (typeof(this.email) != "string") {this.email = ""}
 
-    if (typeof(this.data.email) != "string") {this.data.email = ""}
+    if (typeof(this.password) != "string") {this.password = ""}
 
-    if (typeof(this.data.password) != "string") {this.data.password = ""}
+    // Deleting extra spaces and make them all lowercase
 
-    // Get rid of any bogus properties
-
-    this.data = {
-        username: this.data.username.trim().toLowerCase(),
-        email: this.data.email.trim().toLowerCase(),
-        password: this.data.password
-    }
+    username = this.username.trim().toLowerCase(),
+    email = this.email.trim().toLowerCase(),
+    password = this.password
 
 }
 
 User.prototype.register = function() {
 
-    //Step 1 : Validate User Data
-    this.cleanUp()
+    // Clearing and validating registration form inputs written by guest
+    this.clearInputs()
     this.validate()
 
-    
-    //Step 2 : If no error, Add user to database
+    // If there is no error, insert user to database
     if(!this.errors.length) {
-        // hash user password
+        
+        // Hashing user password using bcrypt package, with this method user password are safe in database
         let salt = bcrypt.genSaltSync(10)
-        this.data.password = bcrypt.hashSync(this.data.password,salt)
-        users.insertOne(this.data)
+        this.password = bcrypt.hashSync(this.password,salt)
+        users.insertOne({username: this.username, email: this.email,password: this.password})
+
     }
 
 }
 
+// Login function return a promise since the time of finding user in database is not determined.
 User.prototype.login = function() {
 
     return new Promise((resolve, reject) => {
-        this.cleanUp()
-
         
-        users.findOne({username: this.data.username}).then((info) =>{
-            if(info && bcrypt.compareSync(this.data.password, info.password)) {
-                resolve("congs")
+        this.clearInputs()
+        
+        users.findOne({username: this.username}).then((found) =>{
+            if(found && bcrypt.compareSync(this.password, found.password)) {
+                resolve("Welcome again.")
             } else {
-                reject("wrong password")
+                reject("Wrong username or password.")
             }
         }).catch(() => {
             reject("Please try again later.")
         })
     })
-
 }
-
 
 
 module.exports = User

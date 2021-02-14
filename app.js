@@ -1,27 +1,29 @@
 const express = require('express')
 
 const session = require('express-session')
+
 const MongoStore = require('connect-mongo')(session)
 
 const flash = require('connect-flash') 
 
-const app = express()
+const router = require('./router')
 
 let sessionOptions = session({
-    secret: "Javascripy is so cool",
+    secret: "Test",
     store: new MongoStore({client: require('./db')}),
     resave: false,
     saveUninitialized: false,
     cookie: {maxAge: 1000*60 * 60 * 24, httpOnly: true}
 })
 
+const app = express()
+
 app.use(sessionOptions)
 
 app.use(flash())
 
-const router = require('./router')
-
 app.use(express.urlencoded({extended: false}))
+
 app.use(express.json())
 
 // Set public folder to open everyone (css files, browser based js files)

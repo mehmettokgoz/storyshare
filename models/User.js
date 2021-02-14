@@ -14,14 +14,29 @@ let User = function(data){
 // This function finds if guest make rule violation while registering
 User.prototype.validate = function() {
 
-    if (this.username == "") { this.errors.push("Username shouldn't be empty") }
-    if (this.email == "") { this.errors.push("Email cannnot be empty") }
-    if (this.password == "") { this.errors.push("Password shouldn't be empty") }
-    if (this.password.length > 0 && this.password.length < 8) { this.errors.push("Password should be at least 8 character") }
-    if (this.password.username > 0 && this.password.length < 3) { this.errors.push("Username should be at least 3 character") }
-    if (!validator.isEmail(this.email)) { this.errors.push("You must provide a valid email.")}
-    if(this.username != "" && !validator.isAlphanumeric(this.username)) {this.errors.push("Username can only contain letters and numbers")}
+    return new Promise( async (resolve, reject) => {
+        if (this.username == "") { this.errors.push("Username shouldn't be empty") }
+        if (this.email == "") { this.errors.push("Email cannnot be empty") }
+        if (this.password == "") { this.errors.push("Password shouldn't be empty") }
+        if (this.password.length > 0 && this.password.length < 8) { this.errors.push("Password should be at least 8 character") }
+        if (this.password.username > 0 && this.password.length < 3) { this.errors.push("Username should be at least 3 character") }
+        if (!validator.isEmail(this.email)) { this.errors.push("You must provide a valid email.")}
+        if(this.username != "" && !validator.isAlphanumeric(this.username)) {this.errors.push("Username can only contain letters and numbers")}
+        
+        // Username is taken or not 
+        if(this.username.length > 2 && validator.isAlphanumeric(this.username)) {
+            let usernameExist = await users.findOne({username: this.username})
+            if (usernameExist){
+                this.errors.push("This username is already taken.")
+            }
+        }
 
+        if(validator.isEmail(this.email) && await users.findOne({email: this.email})) {
+            this.errors.push("This e-mail is already exits.")
+        }
+
+        resolve()
+    }) 
 }
 
 // This function controls inputs for security and typo reasons
@@ -35,29 +50,33 @@ User.prototype.clearInputs = function() {
     if (typeof(this.password) != "string") {this.password = ""}
 
     // Deleting extra spaces and make them all lowercase
-
     username = this.username.trim().toLowerCase(),
     email = this.email.trim().toLowerCase(),
     password = this.password
 
 }
 
-User.prototype.register = function() {
+User.prototype.register = function(){
+    return new Promise(async (resolve, reject) => {
 
-    // Clearing and validating registration form inputs written by guest
-    this.clearInputs()
-    this.validate()
+        // Clearing and validating registration form inputs written by guest
+        this.clearInputs()
+        await this.validate()
+    
+        // If there is no error, insert user to database
+        if(!this.errors.length) {
+            
+            // Hashing user password using bcrypt package, with this method user password are safe in database
+            let salt = bcrypt.genSaltSync(10)
+            this.password = bcrypt.hashSync(this.password,salt)
+            await users.insertOne({username: this.username, email: this.email,password: this.password})
+            resolve()
+        } else {
+            reject(this.errors)
+        }
 
-    // If there is no error, insert user to database
-    if(!this.errors.length) {
-        
-        // Hashing user password using bcrypt package, with this method user password are safe in database
-        let salt = bcrypt.genSaltSync(10)
-        this.password = bcrypt.hashSync(this.password,salt)
-        users.insertOne({username: this.username, email: this.email,password: this.password})
 
-    }
-
+    })
 }
 
 // Login function return a promise since the time of finding user in database is not determined.
